@@ -1,0 +1,215 @@
+@import 'tailwindcss';
+
+/* Theme is driven by data-theme on <html>, not the OS media query, so the
+   in-page toggle wins. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --accent: #0284c7;
+  --accent-soft: rgba(2, 132, 199, 0.16);
+  --page: #f7f8fa;
+  --panel: #ffffff;
+  --panel-hover: #f1f3f7;
+  --line: #e4e7ec;
+  --line-strong: #cdd3dc;
+  --fg: #0b0d12;
+  --muted: #5c6472;
+  --grid: rgba(11, 13, 18, 0.06);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.16);
+  --page: #08090b;
+  --panel: #0f1115;
+  --panel-hover: #14171d;
+  --line: #22262e;
+  --line-strong: #333944;
+  --fg: #e7eaf0;
+  --muted: #8b95a5;
+  --grid: rgba(255, 255, 255, 0.035);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-page: var(--page);
+  --color-panel: var(--panel);
+  --color-panel-hover: var(--panel-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --font-mono:
+    ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Keeps anchor jumps clear of the fixed top bar. */
+  scroll-padding-top: 6rem;
+}
+
+body {
+  margin: 0;
+  background-color: var(--page);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Faint technical grid. Sits under the fog layer of the backdrop. */
+.page-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Haze: soft accent blobs, blurred and drifting. The blobs layer is blurred
+   rather than the container so the particle canvas above stays crisp.
+   Blob colours are mixed from --accent here, not from --accent-soft: the
+   latter is only ~16% alpha and disappears entirely under the blur. */
+.fog {
+  z-index: 1;
+  filter: blur(48px);
+  -webkit-mask-image: radial-gradient(farthest-corner at 50% 45%, #000 42%, transparent 100%);
+  mask-image: radial-gradient(farthest-corner at 50% 45%, #000 42%, transparent 100%);
+}
+
+.fog::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  background-image:
+    radial-gradient(
+      38% 44% at 16% 24%,
+      color-mix(in oklab, var(--accent) 26%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      34% 40% at 84% 16%,
+      color-mix(in oklab, var(--accent) 22%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      44% 48% at 66% 84%,
+      color-mix(in oklab, var(--accent) 24%, transparent),
+      transparent 70%
+    );
+  animation: fog-drift 26s ease-in-out infinite alternate;
+}
+
+.fog::after {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  background-image: radial-gradient(
+    30% 36% at 44% 58%,
+    color-mix(in oklab, var(--accent) 20%, transparent),
+    transparent 70%
+  );
+  opacity: 0.8;
+  animation: fog-breathe 18s ease-in-out infinite alternate;
+}
+
+@keyframes fog-drift {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(5%, 3%, 0) scale(1.14);
+  }
+}
+
+@keyframes fog-breathe {
+  from {
+    transform: translate3d(3%, 2%, 0) scale(1.06);
+  }
+  to {
+    transform: translate3d(-3%, -3%, 0) scale(1);
+  }
+}
+
+/* Lets the haze settle toward the bottom instead of stopping at an edge. */
+.backdrop-vignette {
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    transparent 70%,
+    color-mix(in oklab, var(--page) 78%, transparent) 100%
+  );
+}
+
+/* Scroll-reveal: the observer flips data-revealed, CSS owns the motion. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-reveal][data-revealed] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Pointer-tracked highlight on cards. */
+.spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(
+    18rem 18rem at var(--mx, 50%) var(--my, 0%),
+    var(--accent-soft),
+    transparent 70%
+  );
+}
+
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--page);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .spotlight::before {
+    display: none;
+  }
+
+  .fog::before,
+  .fog::after {
+    animation: none;
+  }
+}

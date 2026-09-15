@@ -1,0 +1,477 @@
+import { useEffect, useState } from 'react'
+
+import Background from './ui/Background.jsx'
+
+// Files in public/ are not rewritten by Vite, so the base path has to be
+// applied by hand or the photo 404s when hosted on a subpath.
+const AVATAR = `${import.meta.env.BASE_URL}avatar.jpg`
+
+const NAME = 'Yuan Kin Ho'
+const EMAIL = 'hugoyuan2004@gmail.com'
+// Omitting `from=` lets each visitor compose from their own Gmail account.
+const GMAIL_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}`
+const PHONE = '+852 9618 5082'
+// wa.me wants the number as digits only, no "+".
+const WHATSAPP_URL = 'https://wa.me/85296185082'
+
+const NAV = [
+  { id: 'skills', label: 'Skills' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'contact', label: 'Contact' },
+]
+
+const SKILL_GROUPS = [
+  {
+    group: 'Languages & Frameworks',
+    items: ['JavaScript (ES6+)', 'TypeScript', 'React', 'Vue.js', 'Node.js', 'Python'],
+  },
+  {
+    group: 'Markup & Styling',
+    items: ['HTML5', 'CSS3', 'SASS', 'Tailwind CSS'],
+  },
+  {
+    group: 'Tools & Cloud',
+    items: [
+      'Git',
+      'Docker',
+      'AWS (S3, CloudFront)',
+      'Azure',
+      'GCP',
+      'REST APIs',
+      'SQL',
+      'Agile / Scrum',
+    ],
+  },
+]
+
+const PROJECTS = [
+  {
+    title: 'Cloud Computing Architecture & Optimisation',
+    description:
+      'Designed multi-cloud cost models and SLA drafts across providers, cutting 15% of projected spend before rollout.',
+    tags: ['Cloud Architecture', 'Cost Modelling', 'SLA Design'],
+  },
+  {
+    title: 'Front-End Portfolio Site',
+    description:
+      'Built a responsive personal site with React and Tailwind CSS, shipped through Netlify CI with a serverless contact form.',
+    tags: ['React', 'Tailwind CSS', 'Netlify CI', 'Serverless'],
+  },
+  {
+    title: 'Low-Code Platform Evaluation',
+    description:
+      'Evaluated Mendix and PowerApps for rapid UI prototyping, proposing an integration path with custom React components.',
+    tags: ['Mendix', 'PowerApps', 'React', 'Evaluation'],
+  },
+]
+
+const SECTIONS = [
+  { id: 'skills', index: '01', title: 'Skills', kicker: 'What I build with' },
+  { id: 'projects', index: '02', title: 'Projects', kicker: 'Selected work' },
+  { id: 'contact', index: '03', title: 'Contact', kicker: "Let's talk" },
+]
+
+function useReveal() {
+  useEffect(() => {
+    const nodes = document.querySelectorAll('[data-reveal]')
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      nodes.forEach((node) => {
+        node.dataset.revealed = ''
+      })
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.dataset.revealed = ''
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.12 },
+    )
+
+    nodes.forEach((node) => observer.observe(node))
+    return () => observer.disconnect()
+  }, [])
+}
+
+// Tracks which section owns the viewport so the top-bar link can light up.
+function useActiveSection() {
+  const [active, setActive] = useState('')
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+        if (visible) setActive(visible.target.id)
+      },
+      { rootMargin: '-35% 0px -55% 0px', threshold: [0, 0.25, 0.5] },
+    )
+
+    SECTIONS.forEach(({ id }) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  return active
+}
+
+function useTheme() {
+  const [theme, setTheme] = useState(
+    () => document.documentElement.dataset.theme ?? 'dark',
+  )
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try {
+      localStorage.setItem('theme', theme)
+    } catch {
+      /* private mode: the toggle still works for this session */
+    }
+  }, [theme])
+
+  return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))]
+}
+
+function trackSpotlight(event) {
+  const box = event.currentTarget.getBoundingClientRect()
+  event.currentTarget.style.setProperty('--mx', `${event.clientX - box.left}px`)
+  event.currentTarget.style.setProperty('--my', `${event.clientY - box.top}px`)
+}
+
+function Reveal({ children, className = '', delay = 0 }) {
+  return (
+    <div data-reveal className={className} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
+    </div>
+  )
+}
+
+function SectionHeading({ index, title, kicker }) {
+  return (
+    <Reveal className="mb-12">
+      <p className="font-mono text-xs tracking-[0.2em] text-accent uppercase">
+        {index} — {kicker}
+      </p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+        {title}
+      </h2>
+      <div className="mt-6 h-px w-full bg-line" />
+    </Reveal>
+  )
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  const isDark = theme === 'dark'
+  const label = isDark ? 'Switch to light theme' : 'Switch to dark theme'
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      title={label}
+      className="grid size-9 place-items-center rounded-lg border border-line bg-panel text-muted transition-colors hover:border-line-strong hover:text-fg"
+    >
+      {isDark ? (
+        // Shown while dark: the action is "go light".
+        <svg
+          viewBox="0 0 24 24"
+          className="size-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
+        </svg>
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          className="size-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
+function TopBar({ theme, onToggle, active }) {
+  return (
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-page/75 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+        <a href="#top" className="group flex items-center gap-2.5">
+          <span className="grid size-7 place-items-center rounded-md border border-accent/40 bg-accent-soft font-mono text-[11px] font-bold text-accent">
+            YH
+          </span>
+          <span className="hidden font-mono text-sm text-muted transition-colors group-hover:text-fg sm:inline">
+            {NAME.toLowerCase().replaceAll(' ', '.')}
+          </span>
+        </a>
+
+        <nav className="flex items-center gap-1 sm:gap-2">
+          {NAV.map(({ id, label }) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              aria-current={active === id ? 'true' : undefined}
+              className={`rounded-md px-2.5 py-1.5 font-mono text-xs transition-colors sm:px-3 sm:text-[13px] ${
+                active === id ? 'bg-accent-soft text-accent' : 'text-muted hover:text-fg'
+              }`}
+            >
+              {label}
+            </a>
+          ))}
+          <div className="ml-1 sm:ml-2">
+            <ThemeToggle theme={theme} onToggle={onToggle} />
+          </div>
+        </nav>
+      </div>
+    </header>
+  )
+}
+
+function Hero() {
+  return (
+    <section id="top" className="relative pt-32 pb-20 sm:pt-40 sm:pb-28">
+      <div className="mx-auto grid max-w-5xl items-center gap-14 px-6 lg:grid-cols-[1.4fr_1fr]">
+        <Reveal>
+          <p className="inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5 font-mono text-xs text-muted">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-70" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-accent" />
+            </span>
+            Open to front-end opportunities · Hong Kong
+          </p>
+
+          <h1 className="mt-7 text-4xl leading-[1.05] font-semibold tracking-tight sm:text-6xl">
+            {NAME}
+          </h1>
+
+          <p className="mt-4 font-mono text-sm text-accent sm:text-base">
+            Front-End Developer
+            <span className="text-muted"> / Applied Sciences @ PolyU SPEED</span>
+          </p>
+
+          <p className="mt-7 max-w-xl text-[15px] leading-relaxed text-muted sm:text-base">
+            I build responsive web interfaces with React, TypeScript and modern
+            JavaScript — and I bring the cloud side with them, from AWS cost
+            modelling to serverless form handling. Currently finishing a B.Sc. in
+            Applied Sciences (2026), after an Associate Degree in Information
+            Technology.
+          </p>
+
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <a
+              href={WHATSAPP_URL}
+              className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-page transition-transform hover:-translate-y-0.5"
+            >
+              Get in touch
+            </a>
+            <a
+              href="#projects"
+              className="rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium transition-colors hover:border-line-strong"
+            >
+              View projects →
+            </a>
+          </div>
+        </Reveal>
+
+        <Reveal delay={120} className="justify-self-center lg:justify-self-end">
+          <div className="relative">
+            <div className="absolute -inset-3 rounded-3xl bg-accent-soft blur-2xl" />
+            <img
+              src={AVATAR}
+              alt={`Portrait of ${NAME}`}
+              width="1264"
+              height="843"
+              className="relative aspect-4/5 w-64 rounded-2xl border border-line object-cover object-top sm:w-72 lg:w-full lg:max-w-xs"
+            />
+            <div className="absolute -right-3 -bottom-3 rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-[11px] text-muted">
+              {'{ available: 2026 }'}
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+function Skills() {
+  const { index, title, kicker } = SECTIONS[0]
+
+  return (
+    <section id="skills" className="scroll-mt-24 py-20 sm:py-24">
+      <div className="mx-auto max-w-5xl px-6">
+        <SectionHeading index={index} title={title} kicker={kicker} />
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {SKILL_GROUPS.map(({ group, items }, i) => (
+            <Reveal key={group} delay={i * 90}>
+              <div
+                onMouseMove={trackSpotlight}
+                className="spotlight relative h-full overflow-hidden rounded-xl border border-line bg-panel p-6 transition-colors hover:border-line-strong"
+              >
+                <h3 className="font-mono text-xs tracking-wider text-muted uppercase">
+                  {group}
+                </h3>
+                <ul className="relative mt-5 flex flex-wrap gap-2">
+                  {items.map((item) => (
+                    <li
+                      key={item}
+                      className="rounded-md border border-line px-2.5 py-1 font-mono text-xs text-fg/90"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Projects() {
+  const { index, title, kicker } = SECTIONS[1]
+
+  return (
+    <section id="projects" className="scroll-mt-24 py-20 sm:py-24">
+      <div className="mx-auto max-w-5xl px-6">
+        <SectionHeading index={index} title={title} kicker={kicker} />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {PROJECTS.map(({ title: projectTitle, description, tags }, i) => (
+            <Reveal
+              key={projectTitle}
+              delay={i * 90}
+              className={i === 0 ? 'md:col-span-2' : ''}
+            >
+              <article
+                onMouseMove={trackSpotlight}
+                className="spotlight group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-panel p-6 transition-colors hover:border-line-strong sm:p-7"
+              >
+                <div className="relative flex items-start justify-between gap-4">
+                  <h3 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-accent sm:text-xl">
+                    {projectTitle}
+                  </h3>
+                  <span className="mt-1 shrink-0 font-mono text-xs text-muted">
+                    0{i + 1}
+                  </span>
+                </div>
+                <p className="relative mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+                  {description}
+                </p>
+                <ul className="relative mt-6 flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <li
+                      key={tag}
+                      className="rounded-md border border-line bg-panel-hover px-2.5 py-1 font-mono text-[11px] text-muted"
+                    >
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Contact() {
+  const { index, title, kicker } = SECTIONS[2]
+  const links = [
+    { label: 'Email', value: EMAIL, href: GMAIL_URL },
+    { label: 'WhatsApp', value: PHONE, href: WHATSAPP_URL },
+  ]
+
+  return (
+    <section id="contact" className="scroll-mt-24 py-20 sm:py-24">
+      <div className="mx-auto max-w-5xl px-6">
+        <SectionHeading index={index} title={title} kicker={kicker} />
+
+        <Reveal>
+          <div className="overflow-hidden rounded-xl border border-line bg-panel">
+            <div className="border-b border-line p-6 sm:p-8">
+              <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                Open to front-end roles and internships.
+              </h3>
+              <p className="mt-2 text-sm text-muted">
+                Based in Hong Kong — Cantonese (native), Mandarin (advanced),
+                English (intermediate).
+              </p>
+            </div>
+
+            <dl className="grid sm:grid-cols-2">
+              {links.map(({ label, value, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="group flex items-center justify-between gap-4 border-b border-line p-6 transition-colors hover:bg-panel-hover sm:border-r sm:border-b-0 sm:last:border-r-0 sm:p-7"
+                >
+                  <div>
+                    <dt className="font-mono text-xs tracking-wider text-muted uppercase">
+                      {label}
+                    </dt>
+                    <dd className="mt-2 text-sm break-all transition-colors group-hover:text-accent sm:text-base">
+                      {value}
+                    </dd>
+                  </div>
+                  <span className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-accent">
+                    →
+                  </span>
+                </a>
+              ))}
+            </dl>
+          </div>
+        </Reveal>
+
+        <Reveal delay={110}>
+          <p className="mt-10 text-center font-mono text-xs text-muted">
+            Built with React, Vite and Tailwind CSS
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+export default function App() {
+  const [theme, toggleTheme] = useTheme()
+  const active = useActiveSection()
+  useReveal()
+
+  return (
+    <div className="min-h-screen">
+      <Background theme={theme} />
+      <TopBar theme={theme} onToggle={toggleTheme} active={active} />
+      <main>
+        <Hero />
+        <Skills />
+        <Projects />
+        <Contact />
+      </main>
+    </div>
+  )
+}
