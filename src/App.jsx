@@ -46,22 +46,21 @@ const SKILL_GROUPS = [
 
 const PROJECTS = [
   {
-    title: 'Cloud Computing Architecture & Optimisation',
+    title: 'Personal Portfolio Site',
     description:
-      'Designed multi-cloud cost models and SLA drafts across providers, cutting 15% of projected spend before rollout.',
-    tags: ['Cloud Architecture', 'Cost Modelling', 'SLA Design'],
-  },
-  {
-    title: 'Front-End Portfolio Site',
-    description:
-      'Built a responsive personal site with React and Tailwind CSS, shipped through Netlify CI with a serverless contact form.',
-    tags: ['React', 'Tailwind CSS', 'Netlify CI', 'Serverless'],
+      'Designed and shipped this site end to end — React 19 and Tailwind CSS v4 on Vite, with a dark/light theme, scroll-reveal sections, and an animated backdrop built from a custom canvas particle field.',
+    tags: ['React 19', 'Tailwind CSS v4', 'Vite', 'GitHub Actions', 'Canvas'],
+    links: [
+      { label: 'Live site', href: 'https://pugtox.github.io/kin-ho-profile/' },
+      { label: 'Source', href: 'https://github.com/PugtoX/kin-ho-profile' },
+    ],
   },
   {
     title: 'Low-Code Platform Evaluation',
     description:
       'Evaluated Mendix and PowerApps for rapid UI prototyping, proposing an integration path with custom React components.',
     tags: ['Mendix', 'PowerApps', 'React', 'Evaluation'],
+    links: [],
   },
 ]
 
@@ -162,8 +161,9 @@ function SectionHeading({ index, title, kicker }) {
       <p className="font-mono text-xs tracking-[0.2em] text-accent uppercase">
         {index} — {kicker}
       </p>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+      <h2 className="mt-3 flex items-center gap-4 text-3xl font-semibold tracking-tight sm:text-4xl">
         {title}
+        <span aria-hidden="true" className="h-px w-12 bg-accent/50 sm:w-16" />
       </h2>
       <div className="mt-6 h-px w-full bg-line" />
     </Reveal>
@@ -324,14 +324,11 @@ function Skills() {
         <div className="grid gap-4 md:grid-cols-3">
           {SKILL_GROUPS.map(({ group, items }, i) => (
             <Reveal key={group} delay={i * 90}>
-              <div
-                onMouseMove={trackSpotlight}
-                className="spotlight relative h-full overflow-hidden rounded-xl border border-line bg-panel p-6 transition-colors hover:border-line-strong"
-              >
+              <div className="h-full rounded-xl border border-line bg-panel p-6 transition-colors hover:border-line-strong">
                 <h3 className="font-mono text-xs tracking-wider text-muted uppercase">
                   {group}
                 </h3>
-                <ul className="relative mt-5 flex flex-wrap gap-2">
+                <ul className="mt-5 flex flex-wrap gap-2">
                   {items.map((item) => (
                     <li
                       key={item}
@@ -350,6 +347,60 @@ function Skills() {
   )
 }
 
+function ProjectCard({ title, description, tags, links, index }) {
+  // Only a card with somewhere to go gets interactive hover feedback.
+  const interactive = links.length > 0
+
+  return (
+    <article
+      onMouseMove={interactive ? trackSpotlight : undefined}
+      className={`group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-panel p-6 transition duration-300 hover:border-line-strong sm:p-7 ${
+        interactive ? 'spotlight hover:-translate-y-1' : ''
+      }`}
+    >
+      <div className="relative flex items-start justify-between gap-4">
+        <h3 className="text-xl font-semibold tracking-tight text-balance transition-colors group-hover:text-accent sm:text-2xl">
+          {title}
+        </h3>
+        <span className="mt-1 shrink-0 font-mono text-xs text-muted">{index}</span>
+      </div>
+
+      <p className="relative mt-4 text-sm leading-relaxed text-muted">
+        {description}
+      </p>
+
+      <ul className="relative mt-6 flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <li
+            key={tag}
+            className="rounded-md border border-line bg-panel-hover px-2.5 py-1 font-mono text-[11px] text-muted"
+          >
+            {tag}
+          </li>
+        ))}
+      </ul>
+
+      {interactive && (
+        <div className="relative mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line pt-6">
+          {links.map(({ label, href }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              title={`${label} — ${title} (opens in a new tab)`}
+              className="inline-flex items-center gap-1.5 font-mono text-xs text-muted transition-colors hover:text-accent"
+            >
+              {label}
+              <span aria-hidden="true">↗</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </article>
+  )
+}
+
 function Projects() {
   const { index, title, kicker } = SECTIONS[1]
 
@@ -359,38 +410,9 @@ function Projects() {
         <SectionHeading index={index} title={title} kicker={kicker} />
 
         <div className="grid gap-4 md:grid-cols-2">
-          {PROJECTS.map(({ title: projectTitle, description, tags }, i) => (
-            <Reveal
-              key={projectTitle}
-              delay={i * 90}
-              className={i === 0 ? 'md:col-span-2' : ''}
-            >
-              <article
-                onMouseMove={trackSpotlight}
-                className="spotlight group relative flex h-full flex-col overflow-hidden rounded-xl border border-line bg-panel p-6 transition-colors hover:border-line-strong sm:p-7"
-              >
-                <div className="relative flex items-start justify-between gap-4">
-                  <h3 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-accent sm:text-xl">
-                    {projectTitle}
-                  </h3>
-                  <span className="mt-1 shrink-0 font-mono text-xs text-muted">
-                    0{i + 1}
-                  </span>
-                </div>
-                <p className="relative mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-                  {description}
-                </p>
-                <ul className="relative mt-6 flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <li
-                      key={tag}
-                      className="rounded-md border border-line bg-panel-hover px-2.5 py-1 font-mono text-[11px] text-muted"
-                    >
-                      {tag}
-                    </li>
-                  ))}
-                </ul>
-              </article>
+          {PROJECTS.map((project, i) => (
+            <Reveal key={project.title} delay={i * 90}>
+              <ProjectCard {...project} index={`0${i + 1}`} />
             </Reveal>
           ))}
         </div>
