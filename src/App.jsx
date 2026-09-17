@@ -270,9 +270,12 @@ function Hero() {
           </p>
 
           <p className="mt-7 max-w-xl text-[15px] leading-relaxed text-muted sm:text-base">
-            I build responsive web interfaces with React, TypeScript and modern
-            JavaScript — and I bring the cloud side with them, from AWS cost
-            modelling to serverless form handling. Currently finishing a B.Sc. in
+            I build responsive web interfaces with React and modern JavaScript,
+            and I care about the parts users feel but rarely notice — theme
+            handled before first paint, animations that respect reduced-motion
+            settings, and accessible markup throughout. I work with AI coding
+            agents to move faster, while keeping architecture, review and
+            testing as my own responsibility. Currently finishing a B.Sc. in
             Applied Sciences (2026), after an Associate Degree in Information
             Technology.
           </p>
