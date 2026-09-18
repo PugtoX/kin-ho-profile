@@ -23,24 +23,15 @@ const NAV = [
 const SKILL_GROUPS = [
   {
     group: 'Languages & Frameworks',
-    items: ['JavaScript (ES6+)', 'TypeScript', 'React', 'Vue.js', 'Node.js', 'Python'],
+    items: ['JavaScript (ES6+)', 'React', 'Vue.js'],
   },
   {
     group: 'Markup & Styling',
-    items: ['HTML5', 'CSS3', 'SASS', 'Tailwind CSS'],
+    items: ['HTML5', 'CSS3', 'Tailwind CSS'],
   },
   {
-    group: 'Tools & Cloud',
-    items: [
-      'Git',
-      'Docker',
-      'AWS (S3, CloudFront)',
-      'Azure',
-      'GCP',
-      'REST APIs',
-      'SQL',
-      'Agile / Scrum',
-    ],
+    group: 'Tooling',
+    items: ['Git', 'Vite', 'GitHub Actions'],
   },
 ]
 
@@ -180,7 +171,7 @@ function ThemeToggle({ theme, onToggle }) {
       onClick={onToggle}
       aria-label={label}
       title={label}
-      className="grid size-9 place-items-center rounded-lg border border-line bg-panel text-muted transition-colors hover:border-line-strong hover:text-fg"
+      className="grid size-11 place-items-center rounded-lg border border-line bg-panel text-muted transition-colors hover:border-line-strong hover:text-fg sm:size-9"
     >
       {isDark ? (
         // Shown while dark: the action is "go light".
@@ -225,13 +216,13 @@ function TopBar({ theme, onToggle, active }) {
           </span>
         </a>
 
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex items-center gap-2">
           {NAV.map(({ id, label }) => (
             <a
               key={id}
               href={`#${id}`}
               aria-current={active === id ? 'true' : undefined}
-              className={`rounded-md px-2.5 py-1.5 font-mono text-xs transition-colors sm:px-3 sm:text-[13px] ${
+              className={`rounded-md px-2.5 py-3.5 font-mono text-xs transition-colors sm:px-3 sm:py-1.5 sm:text-[13px] ${
                 active === id ? 'bg-accent-soft text-accent' : 'text-muted hover:text-fg'
               }`}
             >
@@ -275,21 +266,20 @@ function Hero() {
             handled before first paint, animations that respect reduced-motion
             settings, and accessible markup throughout. I work with AI coding
             agents to move faster, while keeping architecture, review and
-            testing as my own responsibility. Currently finishing a B.Sc. in
-            Applied Sciences (2026), after an Associate Degree in Information
-            Technology.
+            testing as my own responsibility. B.Sc. in Applied Sciences (2026),
+            after an Associate Degree in Information Technology.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <a
               href={WHATSAPP_URL}
-              className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-page transition-transform hover:-translate-y-0.5"
+              className="rounded-lg bg-accent px-5 py-3 text-sm font-medium text-page transition-transform hover:-translate-y-0.5"
             >
               Get in touch
             </a>
             <a
               href="#projects"
-              className="rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium transition-colors hover:border-line-strong"
+              className="rounded-lg border border-line bg-panel px-5 py-3 text-sm font-medium transition-colors hover:border-line-strong"
             >
               View projects →
             </a>
@@ -392,7 +382,7 @@ function ProjectCard({ title, description, tags, links, index }) {
               target="_blank"
               rel="noreferrer"
               title={`${label} — ${title} (opens in a new tab)`}
-              className="inline-flex items-center gap-1.5 font-mono text-xs text-muted transition-colors hover:text-accent"
+              className="-my-2 inline-flex items-center gap-1.5 py-2 font-mono text-xs text-muted transition-colors hover:text-accent"
             >
               {label}
               <span aria-hidden="true">↗</span>
@@ -440,7 +430,7 @@ function Contact() {
           <div className="overflow-hidden rounded-xl border border-line bg-panel">
             <div className="border-b border-line p-6 sm:p-8">
               <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                Open to front-end roles and internships.
+                Available for freelance front-end work.
               </h3>
               <p className="mt-2 text-sm text-muted">
                 Based in Hong Kong — Cantonese (native), Mandarin (advanced),
@@ -473,9 +463,9 @@ function Contact() {
         </Reveal>
 
         <Reveal delay={110}>
-          <p className="mt-10 text-center font-mono text-xs text-muted">
+          <footer className="mt-10 text-center font-mono text-xs text-muted">
             Built with React, Vite and Tailwind CSS
-          </p>
+          </footer>
         </Reveal>
       </div>
     </section>
