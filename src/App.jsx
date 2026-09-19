@@ -5,6 +5,11 @@ import { validateContact } from './lib/contact.js'
 
 // Files in public/ are not rewritten by Vite, so the base path has to be
 // applied by hand or the photo 404s when hosted on a subpath.
+//
+// The source photo is landscape (3:2), so the markup no longer forces a 4:5
+// crop — cropping it here would cut roughly half the frame. A portrait crop is
+// kept at public/avatar-portrait.jpg; to use it, point AVATAR at it and put
+// back `aspect-4/5 object-cover object-top` on the <img>.
 const AVATAR = `${import.meta.env.BASE_URL}avatar.jpg`
 
 const NAME = 'Yuan Kin Ho'
@@ -304,8 +309,8 @@ function Hero() {
               src={AVATAR}
               alt={`Portrait of ${NAME}`}
               width="1264"
-              height="843"
-              className="relative aspect-4/5 w-64 rounded-2xl border border-line object-cover object-top sm:w-72 lg:w-full lg:max-w-xs"
+              height="844"
+              className="relative w-64 rounded-2xl border border-line sm:w-72 lg:w-full lg:max-w-xs"
             />
             <div className="absolute -right-3 -bottom-3 rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-[11px] text-muted">
               {'{ available: 2026 }'}
