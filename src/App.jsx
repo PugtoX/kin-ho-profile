@@ -635,28 +635,33 @@ function Contact() {
 
             <dl className="grid sm:grid-cols-2">
               {links.map(({ label, value, href }) => (
-                // The <a> wraps the pair, so a <div> has to wrap the <dt>/<dd>
-                // group: <dl> only accepts dt/dd/div as direct children, and
-                // axe flags the list (and the items) without it.
-                <a
+                // Shape required by axe: dl > div > (dt + dd), and the link
+                // lives *inside* the <dd>. An <a> may not sit between them —
+                // "dl element has direct children that are not allowed: div > a".
+                <div
                   key={label}
-                  href={href}
-                  className="group block border-b border-line transition-colors hover:bg-panel-hover sm:border-r sm:border-b-0 sm:last:border-r-0"
+                  className="border-b border-line sm:border-r sm:border-b-0 sm:last:border-r-0"
                 >
-                  <div className="flex items-center justify-between gap-4 p-6 sm:p-7">
-                    <div>
-                      <dt className="font-mono text-xs tracking-wider text-muted uppercase">
-                        {label}
-                      </dt>
-                      <dd className="mt-2 text-sm break-all transition-colors group-hover:text-accent sm:text-base">
+                  <dt className="p-6 pb-0 font-mono text-xs tracking-wider text-muted uppercase sm:p-7 sm:pb-0">
+                    {label}
+                  </dt>
+                  <dd className="p-6 pt-2 sm:p-7 sm:pt-2">
+                    <a
+                      href={href}
+                      className="group flex items-center justify-between gap-4 transition-colors"
+                    >
+                      <span className="text-sm break-all transition-colors group-hover:text-accent sm:text-base">
                         {value}
-                      </dd>
-                    </div>
-                    <span className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-accent">
-                      →
-                    </span>
-                  </div>
-                </a>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-accent"
+                      >
+                        →
+                      </span>
+                    </a>
+                  </dd>
+                </div>
               ))}
             </dl>
           </div>
