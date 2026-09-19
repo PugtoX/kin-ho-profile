@@ -635,22 +635,27 @@ function Contact() {
 
             <dl className="grid sm:grid-cols-2">
               {links.map(({ label, value, href }) => (
+                // The <a> wraps the pair, so a <div> has to wrap the <dt>/<dd>
+                // group: <dl> only accepts dt/dd/div as direct children, and
+                // axe flags the list (and the items) without it.
                 <a
                   key={label}
                   href={href}
-                  className="group flex items-center justify-between gap-4 border-b border-line p-6 transition-colors hover:bg-panel-hover sm:border-r sm:border-b-0 sm:last:border-r-0 sm:p-7"
+                  className="group block border-b border-line transition-colors hover:bg-panel-hover sm:border-r sm:border-b-0 sm:last:border-r-0"
                 >
-                  <div>
-                    <dt className="font-mono text-xs tracking-wider text-muted uppercase">
-                      {label}
-                    </dt>
-                    <dd className="mt-2 text-sm break-all transition-colors group-hover:text-accent sm:text-base">
-                      {value}
-                    </dd>
+                  <div className="flex items-center justify-between gap-4 p-6 sm:p-7">
+                    <div>
+                      <dt className="font-mono text-xs tracking-wider text-muted uppercase">
+                        {label}
+                      </dt>
+                      <dd className="mt-2 text-sm break-all transition-colors group-hover:text-accent sm:text-base">
+                        {value}
+                      </dd>
+                    </div>
+                    <span className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-accent">
+                      →
+                    </span>
                   </div>
-                  <span className="text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-accent">
-                    →
-                  </span>
                 </a>
               ))}
             </dl>
