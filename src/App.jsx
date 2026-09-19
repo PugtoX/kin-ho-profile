@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import Background from './ui/Background.jsx'
+import { validateContact } from './lib/contact.js'
 
 // Files in public/ are not rewritten by Vite, so the base path has to be
 // applied by hand or the photo 404s when hosted on a subpath.
@@ -13,6 +14,16 @@ const GMAIL_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${EMAIL}`
 const PHONE = '+852 9618 5082'
 // wa.me wants the number as digits only, no "+".
 const WHATSAPP_URL = 'https://wa.me/85296185082'
+
+// The form posts to whatever endpoint is configured at build time. Until one
+// exists the form still renders, but tells the visitor to use email/WhatsApp
+// instead of silently pretending a message was sent.
+const FORM_ENDPOINT = (import.meta.env.VITE_FORM_ENDPOINT ?? '').trim()
+const FORM_READY = FORM_ENDPOINT.length > 0
+// Honeypot: humans never see this field; a filled value means a bot.
+const HONEYPOT = 'company'
+// Guards against double-clicks and casual repeat submissions on one device.
+const RESUBMIT_COOLDOWN_MS = 60_000
 
 const NAV = [
   { id: 'skills', label: 'Skills' },
@@ -414,6 +425,183 @@ function Projects() {
   )
 }
 
+// Client-side validation only keeps the obvious junk out — the endpoint is the
+// real gate, so nothing here is treated as proof that a message arrives.
+// The rules live in ./lib/contact.js so they can be tested directly.
+
+function ContactForm() {
+  const [values, setValues] = useState({ name: '', email: '', message: '' })
+  const [errors, setErrors] = useState({})
+  const [status, setStatus] = useState('idle') // idle | sending | sent | error | throttled
+
+  function setField(field, value) {
+    setValues((v) => ({ ...v, [field]: value }))
+    // Clear only the field being edited; other errors stay visible.
+    setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e))
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+
+    // Honeypot: report success so a bot does not learn it was filtered.
+    const trap = new FormData(event.currentTarget).get(HONEYPOT)
+    if (typeof trap === 'string' && trap.trim()) {
+      setStatus('sent')
+      return
+    }
+
+    const found = validateContact(values)
+    setErrors(found)
+    if (Object.keys(found).length > 0) return
+
+    const last = Number(localStorage.getItem('contactSentAt') ?? 0)
+    if (Date.now() - last < RESUBMIT_COOLDOWN_MS) {
+      setStatus('throttled')
+      return
+    }
+
+    setStatus('sending')
+    try {
+      const response = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ ...values, [HONEYPOT]: '' }),
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      localStorage.setItem('contactSentAt', String(Date.now()))
+      setStatus('sent')
+      setValues({ name: '', email: '', message: '' })
+    } catch {
+      // Never leave the visitor thinking it worked when it did not.
+      setStatus('error')
+    }
+  }
+
+  if (status === 'sent') {
+    return (
+      <div className="border-b border-line p-6 sm:p-8">
+        <p className="text-sm text-fg" role="status">
+          Thanks — your message is on its way. I usually reply within a day.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          If you hear nothing, email me directly at{' '}
+          <a className="underline hover:text-accent" href={GMAIL_URL}>
+            {EMAIL}
+          </a>
+          .
+        </p>
+      </div>
+    )
+  }
+
+  const fieldClass =
+    'mt-2 w-full rounded-lg border border-line bg-page px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-muted focus:border-accent'
+
+  return (
+    <form className="border-b border-line p-6 sm:p-8" onSubmit={handleSubmit} noValidate>
+      {!FORM_READY && (
+        <p className="mb-6 rounded-lg border border-line bg-panel-hover p-3 text-xs text-muted">
+          The form is not wired up yet on this deployment — please use the email or
+          WhatsApp links below and they will reach me.
+        </p>
+      )}
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label className="font-mono text-xs tracking-wider text-muted uppercase" htmlFor="cf-name">
+            Name
+          </label>
+          <input
+            id="cf-name"
+            name="name"
+            className={fieldClass}
+            value={values.name}
+            onChange={(e) => setField('name', e.target.value)}
+            aria-invalid={errors.name ? 'true' : undefined}
+            aria-describedby={errors.name ? 'cf-name-error' : undefined}
+            autoComplete="name"
+          />
+          {errors.name && (
+            <p id="cf-name-error" className="mt-2 text-xs text-accent">
+              {errors.name}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="font-mono text-xs tracking-wider text-muted uppercase" htmlFor="cf-email">
+            Email
+          </label>
+          <input
+            id="cf-email"
+            name="email"
+            type="email"
+            className={fieldClass}
+            value={values.email}
+            onChange={(e) => setField('email', e.target.value)}
+            aria-invalid={errors.email ? 'true' : undefined}
+            aria-describedby={errors.email ? 'cf-email-error' : undefined}
+            autoComplete="email"
+          />
+          {errors.email && (
+            <p id="cf-email-error" className="mt-2 text-xs text-accent">
+              {errors.email}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <label className="font-mono text-xs tracking-wider text-muted uppercase" htmlFor="cf-message">
+          Message
+        </label>
+        <textarea
+          id="cf-message"
+          name="message"
+          rows={5}
+          className={`${fieldClass} resize-y`}
+          value={values.message}
+          onChange={(e) => setField('message', e.target.value)}
+          aria-invalid={errors.message ? 'true' : undefined}
+          aria-describedby={errors.message ? 'cf-message-error' : undefined}
+        />
+        {errors.message && (
+          <p id="cf-message-error" className="mt-2 text-xs text-accent">
+            {errors.message}
+          </p>
+        )}
+      </div>
+
+      {/* Honeypot — hidden from humans, left for bots to fill. */}
+      <div className="absolute h-px w-px overflow-hidden opacity-0" aria-hidden="true">
+        <label htmlFor="cf-company">Company</label>
+        <input id="cf-company" name={HONEYPOT} tabIndex={-1} autoComplete="off" />
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <button
+          type="submit"
+          disabled={status === 'sending'}
+          className="rounded-lg bg-accent px-5 py-3 text-sm font-medium text-page transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
+        >
+          {status === 'sending' ? 'Sending…' : 'Send message'}
+        </button>
+
+        {status === 'error' && (
+          <p className="text-xs text-accent" role="alert">
+            The message could not be sent. Please use email or WhatsApp below.
+          </p>
+        )}
+        {status === 'throttled' && (
+          <p className="text-xs text-muted" role="status">
+            Already sent — give it a minute, or use email below.
+          </p>
+        )}
+      </div>
+    </form>
+  )
+}
+
 function Contact() {
   const { index, title, kicker } = SECTIONS[2]
   const links = [
@@ -437,6 +625,8 @@ function Contact() {
                 English (intermediate).
               </p>
             </div>
+
+            <ContactForm />
 
             <dl className="grid sm:grid-cols-2">
               {links.map(({ label, value, href }) => (
